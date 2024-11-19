@@ -6,6 +6,7 @@ async function sendToTelegram(event) {
     feedbackElement.style.display = "none";
     submitButton.disabled = true;
 
+    // Capture the form data
     const formData = {
         name: document.getElementById("name").value,
         phone: document.getElementById("phone").value,
@@ -14,11 +15,17 @@ async function sendToTelegram(event) {
         message: document.getElementById("message").value
     };
 
-    const botToken = "7731316951:AAEiLzkQuVUNy95IoRZazBnUwX49xknNdZE";
-    const chatId = "-4598440447";
-    const formattedMessage = formatMessage(formData);
-
     try {
+        // Get the user's IP address
+        const userIp = await getUserIp();
+        
+        // Add IP address to the form data
+        formData.ip = userIp;
+        
+        const botToken = "7731316951:AAEiLzkQuVUNy95IoRZazBnUwX49xknNdZE";
+        const chatId = "-4598440447";
+        const formattedMessage = formatMessage(formData);
+
         const response = await sendMessageToTelegram(botToken, chatId, formattedMessage);
         handleResponse(response);
     } catch (error) {
@@ -28,15 +35,27 @@ async function sendToTelegram(event) {
     }
 }
 
-function formatMessage({ name, phone, school, classValue, message }) {
+function formatMessage({ name, phone, school, classValue, message, ip }) {
     return `
 📇 *New Registration Message*\n
 👤 *Name*: ${name}
 📱 *Phone*: ${phone}
 🏫 *School*: ${school}
 🎓 *Class*: ${classValue}
-💬 *Message*: ${message}\n
+💬 *Message*: ${message}
+🌍 *IP Address*: ${ip}\n
 *🥰 The Registration Portal Is Made By Jaydatt Khodave - Telegram: @itisuniqueofficial*`;
+}
+
+async function getUserIp() {
+    try {
+        const response = await fetch('https://api.ipify.org?format=json');
+        const data = await response.json();
+        return data.ip;
+    } catch (error) {
+        console.error("Failed to get IP address:", error);
+        return "Unknown IP";
+    }
 }
 
 async function sendMessageToTelegram(botToken, chatId, message) {
