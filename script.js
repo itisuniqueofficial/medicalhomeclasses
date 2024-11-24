@@ -3,53 +3,63 @@ async function sendToTelegram(event) {
 
     const feedbackElement = document.getElementById("feedback");
     const submitButton = document.getElementById("submitBtn");
-    feedbackElement.style.display = "none";
-    submitButton.disabled = true;
 
-    // Capture the form data
-    const formData = {
-        name: document.getElementById("name").value,
-        phone: document.getElementById("phone").value,
-        school: document.getElementById("school").value,
-        classValue: document.getElementById("class").value,
-        message: document.getElementById("message").value
-    };
+    // Hide feedback and disable the submit button
+    setFeedbackVisibility(feedbackElement, false);
+    toggleSubmitButton(submitButton, true);
+
+    // Gather form data
+    const formData = getFormData();
 
     try {
-        // Get the user's IP address
-        const userIp = await getUserIp();
-        
-        // Add IP address to the form data
-        formData.ip = userIp;
-        
+        // Fetch user's IP address and add it to form data
+        formData.ip = await fetchUserIp();
+
+        // Send the message to Telegram
         const botToken = "7731316951:AAEiLzkQuVUNy95IoRZazBnUwX49xknNdZE";
         const chatId = "-4598440447";
         const formattedMessage = formatMessage(formData);
 
         const response = await sendMessageToTelegram(botToken, chatId, formattedMessage);
-        handleResponse(response);
+        handleResponse(response, feedbackElement);
     } catch (error) {
-        showMessage("An error occurred. Please try again.", "error");
+        console.error("Error:", error);
+        showMessage("An error occurred. Please try again.", "error", feedbackElement);
     } finally {
-        submitButton.disabled = false;
+        toggleSubmitButton(submitButton, false);
     }
 }
 
+// Collect form data
+function getFormData() {
+    return {
+        name: document.getElementById("name").value.trim(),
+        phone: document.getElementById("phone").value.trim(),
+        school: document.getElementById("school").value.trim(),
+        classValue: document.getElementById("class").value.trim(),
+        message: document.getElementById("message").value.trim(),
+    };
+}
+
+// Format the message for Telegram
 function formatMessage({ name, phone, school, classValue, message, ip }) {
     return `
-📇 *New Registration Message*\n
+📇 *New Registration Message*
 👤 *Name*: ${name}
 📱 *Phone*: ${phone}
 🏫 *School*: ${school}
 🎓 *Class*: ${classValue}
 💬 *Message*: ${message}
-🌍 *IP Address*: ${ip}\n
+🌍 *IP Address*: ${ip}
+
 *🥰 The Registration Portal Is Made By Jaydatt Khodave - Telegram: @itisuniqueofficial*`;
 }
 
-async function getUserIp() {
+// Fetch user's IP address
+async function fetchUserIp() {
     try {
         const response = await fetch('https://api.ipify.org?format=json');
+        if (!response.ok) throw new Error("Failed to fetch IP address");
         const data = await response.json();
         return data.ip;
     } catch (error) {
@@ -58,41 +68,49 @@ async function getUserIp() {
     }
 }
 
+// Send message to Telegram
 async function sendMessageToTelegram(botToken, chatId, message) {
     const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
-    const response = await fetch(url, {
+    return fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             chat_id: chatId,
             text: message,
-            parse_mode: "Markdown"
-        })
+            parse_mode: "Markdown",
+        }),
     });
-
-    return response;
 }
 
-function handleResponse(response) {
-    const feedbackMessage = response.ok
-        ? { text: "Message sent successfully!", type: "success" }
-        : { text: "Failed to send message! Please try again.", type: "error" };
-
-    showMessage(feedbackMessage.text, feedbackMessage.type);
-    if (response.ok) document.getElementById("form").reset();
+// Handle the Telegram response
+function handleResponse(response, feedbackElement) {
+    if (response.ok) {
+        document.getElementById("form").reset();
+        showMessage("Message sent successfully!", "success", feedbackElement);
+    } else {
+        showMessage("Failed to send message! Please try again.", "error", feedbackElement);
+    }
 }
 
-function showMessage(text, type) {
-    const feedbackElement = document.getElementById("feedback");
+// Display feedback messages
+function showMessage(text, type, feedbackElement) {
     feedbackElement.textContent = text;
     feedbackElement.className = `feedback ${type}`;
-    feedbackElement.style.display = "block";
-    feedbackElement.style.opacity = "1";
+    setFeedbackVisibility(feedbackElement, true);
 
     setTimeout(() => {
         feedbackElement.style.opacity = "0";
-        setTimeout(() => {
-            feedbackElement.style.display = "none";
-        }, 500);
+        setTimeout(() => setFeedbackVisibility(feedbackElement, false), 500);
     }, 3000);
+}
+
+// Toggle submit button state
+function toggleSubmitButton(button, isDisabled) {
+    button.disabled = isDisabled;
+}
+
+// Set feedback element visibility
+function setFeedbackVisibility(feedbackElement, isVisible) {
+    feedbackElement.style.display = isVisible ? "block" : "none";
+    feedbackElement.style.opacity = isVisible ? "1" : "0";
 }
